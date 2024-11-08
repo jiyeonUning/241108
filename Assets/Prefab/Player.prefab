@@ -975,3 +975,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   controller: {fileID: -8573351210462423747}
   moveSpeed: 5
+  jumpSpeed: 10

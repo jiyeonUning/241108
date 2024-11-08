@@ -1,43 +1,58 @@
-using System.Collections;
-using System.Collections.Generic;
 using Fusion;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class PlayerController : NetworkBehaviour
 {
-    [SerializeField] CharacterController controller;
-    [SerializeField] float moveSpeed;
+    // 참고한 코드 - 집게사장의 꿈 님 : https://krapboss.tistory.com/61
 
+    [SerializeField] CharacterController controller;
+    [Space(10)]
+    [SerializeField] float moveSpeed;
+    [Space(10)]
+    [SerializableType] bool isJumped;
+    [SerializeField] float jumpSpeed;
+    [SerializeField] float ogStepOffset;
+    private float ySpeed;
+    [Space(10)]
     private Vector3 inputDir;
 
-
-    // 프레임마다 호출되는 함수 Update
-    // 개인 컴퓨터에서 처리할 작업을 구현한다.
     private void Update()
     {
         inputDir.x = Input.GetAxisRaw("Horizontal");
         inputDir.z = Input.GetAxisRaw("Vertical");
+
+        if (Input.GetKeyDown(KeyCode.Space)) { isJumped = true; }
     }
 
-    // 네트워크 통신 주기마다 호출되는 함수 FixedUpdateNetwork
-    // 네트워크에서 처리할 작업을 구현한다.
+
     public override void FixedUpdateNetwork()
     {
-        // 내 소유권의 네트워크 오브젝트가 아닌경우, return
         if (HasStateAuthority == false) return;
-
-        // 입력값이 없을 경우, return
+        if (controller.isGrounded) { inputDir.y = ogStepOffset; }
         if (inputDir == Vector3.zero) return;
 
-        controller.Move(inputDir * moveSpeed * Runner.DeltaTime);
-        transform.forward = inputDir;
+        Vector3 move = new Vector3(inputDir.x, 0, inputDir.z) * Runner.DeltaTime * moveSpeed;
+
+        inputDir.y = Physics.gravity.y * Runner.DeltaTime;
+        if (isJumped && controller.isGrounded)
+        {
+            Debug.Log("점프함");
+            inputDir.y += jumpSpeed;
+        }
+        isJumped = false;
+
+        Debug.Log("움직임");
+        controller.Move(move + inputDir * Runner.DeltaTime);
+        transform.forward = move;
     }
 
-    // 네트워크 오프젝트가 생성 됐을 때 호출되는 함수 Spawned
-    // Awake, Start 함수의 대체제로도 사용되기도 한다.
+
     public override void Spawned()
     {
-        // 내 소유권의 네트워크 오브젝트일 경우,
+        isJumped = false;
+        ogStepOffset = controller.stepOffset;
+
         if (HasStateAuthority == true)
         {
             CameraController camController = Camera.main.GetComponent<CameraController>();
