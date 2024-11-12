@@ -13,8 +13,8 @@ public class PlayerController : NetworkBehaviour
     [SerializableType] bool isJumped;
     [SerializeField] float jumpSpeed;
     [SerializeField] float ogStepOffset;
+
     private float ySpeed;
-    [Space(10)]
     private Vector3 inputDir;
 
     private void Update()
@@ -29,18 +29,23 @@ public class PlayerController : NetworkBehaviour
     public override void FixedUpdateNetwork()
     {
         if (HasStateAuthority == false) return;
-        if (controller.isGrounded) { inputDir.y = ogStepOffset; }
+        if (controller.isGrounded) { inputDir.y = ogStepOffset; ySpeed = 0f; }
         if (inputDir == Vector3.zero) return;
 
         Vector3 move = new Vector3(inputDir.x, 0, inputDir.z) * Runner.DeltaTime * moveSpeed;
 
-        inputDir.y = Physics.gravity.y * Runner.DeltaTime;
+        //inputDir.y = Physics.gravity.y * Runner.DeltaTime;
+        ySpeed += Physics.gravity.y * Runner.DeltaTime;
+
         if (isJumped && controller.isGrounded)
         {
             Debug.Log("점프함");
-            inputDir.y += jumpSpeed;
+            //inputDir.y += jumpSpeed;
+            ySpeed += jumpSpeed;
         }
         isJumped = false;
+        // +
+        inputDir.y = ySpeed;
 
         Debug.Log("움직임");
         controller.Move(move + inputDir * Runner.DeltaTime);
